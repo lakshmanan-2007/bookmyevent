@@ -1,0 +1,54 @@
+spring:
+  application:
+    name: bookmyevent
+  # Default profile uses in-memory H2 so the app runs with zero setup.
+  profiles:
+    active: dev
+
+app:
+  jwt:
+    # Base64-encoded 256-bit secret. Override in production via APP_JWT_SECRET env var.
+    secret: ${APP_JWT_SECRET:Y2hhbmdlLW1lLXRoaXMtaXMtYS1kZXYtb25seS1zZWNyZXQta2V5LTEyMw==}
+    expiration-ms: 86400000   # 24h
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:h2:mem:bookmyevent;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;LOCK_TIMEOUT=10000
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate.format_sql: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  sql:
+    init:
+      mode: never
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${JDBC_URL:jdbc:postgresql://localhost:5432/bookmyevent}
+    username: ${DB_USER:bookmyevent}
+    password: ${DB_PASSWORD:bookmyevent}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false

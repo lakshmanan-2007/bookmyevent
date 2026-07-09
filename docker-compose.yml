@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: bookmyevent
+      POSTGRES_USER: bookmyevent
+      POSTGRES_PASSWORD: bookmyevent
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bookmyevent"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JDBC_URL: jdbc:postgresql://db:5432/bookmyevent
+      DB_USER: bookmyevent
+      DB_PASSWORD: bookmyevent
+      APP_JWT_SECRET: Y2hhbmdlLW1lLXRoaXMtaXMtYS1kZXYtb25seS1zZWNyZXQta2V5LTEyMw==
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:
