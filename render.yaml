@@ -1,0 +1,57 @@
+# Render Blueprint - provisions the whole stack (database + backend + frontend).
+# In Render: New > Blueprint > pick this repo > Apply.
+databases:
+  - name: bookmyevent-db
+    plan: free
+    databaseName: bookmyevent
+    user: bookmyevent
+
+services:
+  # ---- Backend: Spring Boot (Docker) ----
+  - type: web
+    name: bookmyevent-api
+    runtime: docker
+    plan: free
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    healthCheckPath: /api/events
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DB_HOST
+        fromDatabase:
+          name: bookmyevent-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: bookmyevent-db
+          property: port
+      - key: DB_NAME
+        value: bookmyevent
+      - key: DB_USER
+        fromDatabase:
+          name: bookmyevent-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: bookmyevent-db
+          property: password
+      - key: APP_JWT_SECRET
+        generateValue: true
+      - key: APP_CORS_ORIGINS
+        value: "*"
+
+  # ---- Frontend: Next.js (Node) ----
+  - type: web
+    name: bookmyevent-web
+    runtime: node
+    plan: free
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    envVars:
+      # Set to the backend URL after it deploys (https://bookmyevent-api.onrender.com)
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=460"

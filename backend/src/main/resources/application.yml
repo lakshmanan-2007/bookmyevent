@@ -5,11 +5,18 @@ spring:
   profiles:
     active: dev
 
+server:
+  # Cloud hosts (Render/Railway) inject PORT; fall back to 8080 locally.
+  port: ${PORT:8080}
+
 app:
   jwt:
     # Base64-encoded 256-bit secret. Override in production via APP_JWT_SECRET env var.
     secret: ${APP_JWT_SECRET:Y2hhbmdlLW1lLXRoaXMtaXMtYS1kZXYtb25seS1zZWNyZXQta2V5LTEyMw==}
     expiration-ms: 86400000   # 24h
+  cors:
+    # Comma-separated allowed origins. In prod set APP_CORS_ORIGINS to your frontend URL (or * for any).
+    allowed-origins: ${APP_CORS_ORIGINS:http://localhost:3000}
 
 springdoc:
   swagger-ui:
@@ -45,7 +52,7 @@ spring:
     activate:
       on-profile: prod
   datasource:
-    url: ${JDBC_URL:jdbc:postgresql://localhost:5432/bookmyevent}
+    url: ${JDBC_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:bookmyevent}}
     username: ${DB_USER:bookmyevent}
     password: ${DB_PASSWORD:bookmyevent}
   jpa:
