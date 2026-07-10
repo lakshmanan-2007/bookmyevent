@@ -1,13 +1,7 @@
-# Render Blueprint - provisions the whole stack (database + backend + frontend).
+# Render Blueprint - backend only (database = Supabase, frontend = Vercel).
 # In Render: New > Blueprint > pick this repo > Apply.
-databases:
-  - name: bookmyevent-db
-    plan: free
-    databaseName: bookmyevent
-    user: bookmyevent
-
+# You'll be prompted for JDBC_URL, DB_USER, DB_PASSWORD (from Supabase).
 services:
-  # ---- Backend: Spring Boot (Docker) ----
   - type: web
     name: bookmyevent-api
     runtime: docker
@@ -18,40 +12,16 @@ services:
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
-      - key: DB_HOST
-        fromDatabase:
-          name: bookmyevent-db
-          property: host
-      - key: DB_PORT
-        fromDatabase:
-          name: bookmyevent-db
-          property: port
-      - key: DB_NAME
-        value: bookmyevent
+      # jdbc:postgresql://aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require
+      - key: JDBC_URL
+        sync: false
+      # postgres.<your-project-ref>
       - key: DB_USER
-        fromDatabase:
-          name: bookmyevent-db
-          property: user
+        sync: false
+      # your Supabase database password
       - key: DB_PASSWORD
-        fromDatabase:
-          name: bookmyevent-db
-          property: password
+        sync: false
       - key: APP_JWT_SECRET
         generateValue: true
       - key: APP_CORS_ORIGINS
         value: "*"
-
-  # ---- Frontend: Next.js (Node) ----
-  - type: web
-    name: bookmyevent-web
-    runtime: node
-    plan: free
-    rootDir: frontend
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start
-    envVars:
-      # Set to the backend URL after it deploys (https://bookmyevent-api.onrender.com)
-      - key: NEXT_PUBLIC_API_URL
-        sync: false
-      - key: NODE_OPTIONS
-        value: "--max-old-space-size=460"
