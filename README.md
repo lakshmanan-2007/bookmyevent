@@ -183,6 +183,30 @@ curl -s -X POST http://localhost:8080/api/bookings \
 
 ---
 
+## Scaling & production features
+
+Beyond the core app, this project includes production/distributed-systems concerns:
+
+- **Rate limiting** — an in-memory fixed-window limiter (`RateLimitFilter`, 100 req/min per IP on
+  `/api/**`, returns `429`). At scale this moves to a Redis-backed counter.
+- **Distributed lock (config-switchable)** — booking is wrapped in a `DistributedLock`:
+  - `app.lock.provider=db` (default) — single instance; correctness from the DB pessimistic lock.
+  - `app.lock.provider=redis` — a Redis `SET NX PX` lock so booking stays **oversell-safe across many
+    instances**. Redis (Lettuce) connects lazily, so the app runs fine without Redis when disabled.
+- **Observability** — Spring Actuator at `/actuator/health`, `/actuator/metrics`.
+- **High-Level Design** — see [`docs/HLD.md`](./docs/HLD.md) and [`docs/architecture.svg`](./docs/architecture.svg)
+  (how it scales to 1M users).
+- **Load test** — [`loadtest/booking-loadtest.js`](./loadtest/booking-loadtest.js) (k6):
+  `k6 run -e BASE=<url> loadtest/booking-loadtest.js`.
+
+### Enabling the Redis distributed lock (optional)
+
+1. Create a free Redis (e.g. Upstash) and copy its connection URL (`rediss://...`).
+2. On the backend host set env vars: `APP_LOCK_PROVIDER=redis` and `REDIS_URL=<your redis url>`.
+3. Redeploy. Booking now serialises via Redis across all instances (DB lock remains the final guard).
+
+---
+
 ## Notes
 
 - Default dev profile uses H2 so the project runs with a single command. Switch to

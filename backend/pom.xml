@@ -48,6 +48,19 @@
             <artifactId>caffeine</artifactId>
         </dependency>
 
+        <!-- Observability: health + metrics at /actuator/** -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- Redis: only used when app.lock.provider=redis (distributed lock).
+             Lettuce connects lazily, so the app starts fine without a Redis server. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
         <!-- JWT -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

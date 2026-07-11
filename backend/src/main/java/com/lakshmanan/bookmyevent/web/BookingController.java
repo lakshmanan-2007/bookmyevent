@@ -2,6 +2,7 @@ package com.lakshmanan.bookmyevent.web;
 
 import com.lakshmanan.bookmyevent.dto.booking.BookingRequest;
 import com.lakshmanan.bookmyevent.dto.booking.BookingResponse;
+import com.lakshmanan.bookmyevent.lock.DistributedLock;
 import com.lakshmanan.bookmyevent.security.UserPrincipal;
 import com.lakshmanan.bookmyevent.service.BookingService;
 import jakarta.validation.Valid;
@@ -23,15 +24,22 @@ import org.springframework.web.bind.annotation.RestController;
 public class BookingController {
 
     private final BookingService bookingService;
+    private final DistributedLock lock;
 
-    public BookingController(BookingService bookingService) {
+    public BookingController(BookingService bookingService, DistributedLock lock) {
         this.bookingService = bookingService;
+        this.lock = lock;
     }
 
     @PostMapping
     public ResponseEntity<BookingResponse> book(@AuthenticationPrincipal UserPrincipal principal,
                                                 @Valid @RequestBody BookingRequest request) {
-        BookingResponse response = bookingService.book(principal.getId(), request);
+        // Acquire a per-event distributed lock, then run the transactional booking
+        // (which also holds the DB pessimistic lock). Together this keeps booking
+        // oversell-safe even when the backend is scaled to many instances.
+        BookingResponse response = lock.runLocked(
+                "event:" + request.eventId(),
+                () -> bookingService.book(principal.getId(), request));
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

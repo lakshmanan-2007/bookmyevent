@@ -4,6 +4,11 @@ spring:
   # Default profile uses in-memory H2 so the app runs with zero setup.
   profiles:
     active: dev
+  # Redis is only used when app.lock.provider=redis. Lettuce connects lazily,
+  # so this default is harmless when no Redis server is present.
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
 
 server:
   # Cloud hosts (Render/Railway) inject PORT; fall back to 8080 locally.
@@ -17,10 +22,23 @@ app:
   cors:
     # Comma-separated allowed origins. In prod set APP_CORS_ORIGINS to your frontend URL (or * for any).
     allowed-origins: ${APP_CORS_ORIGINS:http://localhost:3000}
+  lock:
+    # 'db'    = single instance, uses the DB pessimistic lock (default, no Redis needed).
+    # 'redis' = distributed lock, oversell-safe across many instances (needs Redis).
+    provider: ${APP_LOCK_PROVIDER:db}
 
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: never
 
 ---
 spring:
