@@ -39,6 +39,12 @@ management:
   endpoint:
     health:
       show-details: never
+  health:
+    # Redis is optional (only used when app.lock.provider=redis). Without this,
+    # Actuator would ping Redis on /actuator/health and report DOWN when no Redis
+    # server is configured. Disable the probe so health reflects the app itself.
+    redis:
+      enabled: false
 
 ---
 spring:
