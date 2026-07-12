@@ -2,7 +2,8 @@ package com.lakshmanan.bookmyevent.lock;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lakshmanan.bookmyevent.exception.BadRequestException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,7 @@ import java.util.function.Supplier;
 @ConditionalOnProperty(name = "app.lock.provider", havingValue = "miniredis")
 public class MiniRedisHttpLock implements DistributedLock {
 
+    private static final Logger log = LoggerFactory.getLogger(MiniRedisHttpLock.class);
     private static final long TTL_MS = 10_000;
     private static final long MAX_WAIT_MS = 5000;
     private static final long RETRY_MS = 50;
@@ -66,7 +68,10 @@ public class MiniRedisHttpLock implements DistributedLock {
                 }
             }
             if (token == null) {
-                throw new BadRequestException("This event is very busy right now. Please try again.");
+                // Mini-Redis was unreachable or the lock stayed contended past the wait.
+                // Degrade gracefully: the DB pessimistic lock inside the transaction is the
+                // final oversell guarantee, so proceed instead of failing the booking.
+                log.warn("MiniRedis lock not acquired for '{}'; proceeding (DB lock is the guard)", key);
             }
             return action.get();
         } finally {
